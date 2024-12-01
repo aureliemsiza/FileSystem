@@ -1,0 +1,163 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <filesystem>
+#include <algorithm>
+
+using namespace std;
+namespace fs = std::filesystem;
+
+// Allowed file extensions
+vector<string> allowedExtensions = {
+    "aac", "adt", "adts", "accdb", "accde", "accdr", "accdt", "aif", "aifc", "aiff", "aspx",
+    "avi", "bat", "bin", "bmp", "cab", "cda", "csv", "dif", "dll", "doc", "docm", "docx", "dot",
+    "dotx", "eml", "eps", "exe", "flv", "gif", "htm", "html", "ini", "iso", "jar", "jpg", "jpeg",
+    "m4a", "mdb", "mid", "midi", "mov", "mp3", "mp4", "mpeg", "mpg", "msi", "mui", "pdf", "png",
+    "pot", "potm", "potx", "ppam", "pps", "ppsm", "ppsx", "ppt", "pptm", "pptx", "psd", "pst",
+    "pub", "rar", "rtf", "sldm", "sldx", "swf", "sys", "tif", "tiff", "tmp", "txt", "vob", "vsd",
+    "vsdm", "vsdx", "vss", "vssm", "vst", "vstm", "vstx", "wav", "wbk", "wks", "wma", "wmd",
+    "wmv", "wmz", "wms", "wpd", "wp5", "xla", "xlam", "xll", "xlm", "xls", "xlsm", "xlsx", "xlt",
+    "xltm", "xltx", "xps", "zip"
+};
+
+// Function to check if a file name has a valid extension
+bool hasValidExtension(const string& filename) {
+    size_t pos = filename.rfind('.');
+    if (pos == string::npos) return false; // No extension found
+
+    string extension = filename.substr(pos + 1);
+    transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+
+    return find(allowedExtensions.begin(), allowedExtensions.end(), extension) != allowedExtensions.end();
+}
+
+// Function to create a new file
+void createFile(const string& username, const string& filename) {
+    if (!hasValidExtension(filename)) {
+        cout << "Error: Invalid file extension. Allowed extensions are required." << endl;
+        return;
+    }
+
+    string userDirectory = "users/" + username;
+
+    // Create the user's directory if it doesn't exist
+    if (!fs::exists(userDirectory)) {
+        fs::create_directories(userDirectory);
+    }
+
+    string filepath = userDirectory + "/" + filename;
+    ofstream file(filepath);
+
+    if (file.is_open()) {
+        cout << "File created successfully: " << filepath << endl;
+        file.close();
+    } else {
+        cout << "Error creating file: " << filepath << endl;
+    }
+}
+
+// Function to delete a file
+void deleteFile(const string& username, const string& filename) {
+    if (!hasValidExtension(filename)) {
+        cout << "Error: Invalid file extension. Allowed extensions are required." << endl;
+        return;
+    }
+
+    string filepath = "users/" + username + "/" + filename;
+    if (fs::remove(filepath)) {
+        cout << "File deleted successfully: " << filepath << endl;
+    } else {
+        cout << "Error deleting file: " << filepath << endl;
+    }
+}
+
+// Function to search for a file
+bool searchFile(const string& username, const string& filename) {
+    if (!hasValidExtension(filename)) {
+        cout << "Error: Invalid file extension. Allowed extensions are required." << endl;
+        return false;
+    }
+
+    string filepath = "users/" + username + "/" + filename;
+    return fs::exists(filepath);
+}
+
+// Function to list files in a user's directory
+void listDirectory(const string& username) {
+    string directoryPath = "users/" + username;
+
+    if (fs::exists(directoryPath) && fs::is_directory(directoryPath)) {
+        cout << "Files in " << username << "'s directory:" << endl;
+        for (const auto& entry : fs::directory_iterator(directoryPath)) {
+            cout << entry.path().filename().string() << endl;
+        }
+    } else {
+        cout << "Directory does not exist or is empty." << endl;
+    }
+}
+
+// Function to rename a file
+void renameFile(const string& username, const string& oldFilename, const string& newFilename) {
+    if (!hasValidExtension(oldFilename) || !hasValidExtension(newFilename)) {
+        cout << "Error: Invalid file extension. Allowed extensions are required." << endl;
+        return;
+    }
+
+    string oldFilePath = "users/" + username + "/" + oldFilename;
+    string newFilePath = "users/" + username + "/" + newFilename;
+
+    if (fs::exists(oldFilePath)) {
+        fs::rename(oldFilePath, newFilePath);
+        cout << "File renamed successfully: " << oldFilePath << " to " << newFilePath << endl;
+    } else {
+        cout << "Error: File does not exist: " << oldFilePath << endl;
+    }
+}
+
+int main() {
+    string username, filename, operation;
+
+    while (true) {
+        cout << "Enter username (Aurelie, Haden, Sarah) or 'quit' to exit: ";
+        cin >> username;
+
+        if (username == "quit") {
+            break;
+        }
+
+        cout << "Enter operation (create, delete, search, list, rename): ";
+        cin >> operation;
+
+        if (operation == "create") {
+            cout << "Enter filename: ";
+            cin >> filename;
+            createFile(username, filename);
+        } else if (operation == "delete") {
+            cout << "Enter filename: ";
+            cin >> filename;
+            deleteFile(username, filename);
+        } else if (operation == "search") {
+            cout << "Enter filename: ";
+            cin >> filename;
+            if (searchFile(username, filename)) {
+                cout << "File found: " << filename << endl;
+            } else {
+                cout << "File not found: " << filename << endl;
+            }
+        } else if (operation == "list") {
+            listDirectory(username);
+        } else if (operation == "rename") {
+            cout << "Enter old filename: ";
+            cin >> filename;
+            cout << "Enter new filename: ";
+            string newFilename;
+            cin >> newFilename;
+            renameFile(username, filename, newFilename);
+        } else {
+            cout << "Invalid operation." << endl;
+        }
+    }
+
+    return 0;
+}
